@@ -24,3 +24,5 @@ def test_build_sources_creates_partitioned_indexes(tmp_path):
     assert (output_dir / "operators" / "00_operators_index.md").exists()
     assert (output_dir / "datasets_and_fields" / "00_datasets_fields_index.md").exists()
     assert (output_dir / "public_articles" / "00_public_articles_index.md").exists()
+    assert (output_dir / "alpha_patterns" / "02_momentum.md").exists()
+    assert (output_dir / "alpha_patterns" / "06_turnover_control.md").exists()

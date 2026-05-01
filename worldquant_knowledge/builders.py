@@ -109,12 +109,23 @@ def _build_datasets_and_fields(
 
 def _build_alpha_patterns(path: Path, updated_at: str) -> None:
     path.mkdir(parents=True, exist_ok=True)
-    _write_partition_index(path, "Alpha Patterns", ["overview", "momentum", "reversal", "quality", "risk_neutralization", "turnover_control"], updated_at)
-    body = (
-        "# Alpha Patterns Overview\n\n"
-        "This section is reserved for derived research patterns from public articles, operators, fields, and personal notes."
-    )
-    write_markdown(path / "01_overview.md", _meta("Alpha Patterns Overview", "alpha_patterns", "generated", updated_at, ""), body)
+    patterns = [
+        ("01_overview.md", "Alpha Patterns Overview", "overview"),
+        ("02_momentum.md", "Momentum Alpha Patterns", "momentum"),
+        ("03_reversal.md", "Reversal Alpha Patterns", "reversal"),
+        ("04_quality.md", "Quality Alpha Patterns", "quality"),
+        ("05_risk_neutralization.md", "Risk Neutralization Alpha Patterns", "risk_neutralization"),
+        ("06_turnover_control.md", "Turnover Control Alpha Patterns", "turnover_control"),
+    ]
+    _write_partition_index(path, "Alpha Patterns", [slug for _, _, slug in patterns], updated_at)
+    for filename, title, slug in patterns:
+        body = (
+            f"# {title}\n\n"
+            "This file is a generated placeholder for NotebookLM source organization.\n\n"
+            "Add derived notes here as you identify repeatable alpha research patterns from operators, fields, public articles, and personal experiments.\n\n"
+            f"Pattern category: `{slug}`"
+        )
+        write_markdown(path / filename, _meta(title, "alpha_patterns", "generated", updated_at, ""), body)
 
 
 def _build_public_articles(path: Path, articles: list[dict[str, Any]], max_words: int, updated_at: str) -> None:
