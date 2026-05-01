@@ -79,9 +79,12 @@ The final Markdown output is not populated with demo, fixture, sample, or placeh
 .\.venv\Scripts\python sync.py --brain
 .\.venv\Scripts\python sync.py --notes
 .\.venv\Scripts\python sync.py --build
+.\.venv\Scripts\python sync.py --all --incremental
 ```
 
 Use `--build` when you already have cached data in `raw/` and only want to regenerate Markdown.
+
+Use `--incremental` with `--all`, `--public`, or `--brain` to reuse existing raw exports when present. Missing cache files are fetched normally.
 
 ## Configuration
 

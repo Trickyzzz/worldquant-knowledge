@@ -17,6 +17,7 @@ def main() -> int:
     parser.add_argument("--brain", action="store_true", help="Export BRAIN structured data")
     parser.add_argument("--notes", action="store_true", help="Load local notes")
     parser.add_argument("--build", action="store_true", help="Build markdown from cached raw files")
+    parser.add_argument("--incremental", action="store_true", help="Reuse cached raw exports when available")
     args = parser.parse_args()
 
     try:
@@ -29,9 +30,16 @@ def main() -> int:
 
         run_everything = args.all or not any([args.public, args.brain, args.notes, args.build])
         if run_everything or args.public:
-            public_articles = run_public(config)
+            public_articles = _read_json(config.output.raw_dir / "public_articles.json", []) if args.incremental else []
+            if not public_articles:
+                public_articles = run_public(config)
         if run_everything or args.brain:
-            operators, datasets, fields = run_brain(config)
+            if args.incremental:
+                operators = _read_json(config.output.raw_dir / "brain" / "operators.json", [])
+                datasets = _read_json(config.output.raw_dir / "brain" / "datasets.json", [])
+                fields = _read_json(config.output.raw_dir / "brain" / "fields.json", [])
+            if not all([operators, datasets, fields]):
+                operators, datasets, fields = run_brain(config)
         if run_everything or args.notes:
             notes = run_notes(config)
         if args.build and not run_everything:

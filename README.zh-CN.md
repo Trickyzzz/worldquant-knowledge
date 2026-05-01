@@ -79,9 +79,12 @@ crawl_manifest.csv
 .\.venv\Scripts\python sync.py --brain
 .\.venv\Scripts\python sync.py --notes
 .\.venv\Scripts\python sync.py --build
+.\.venv\Scripts\python sync.py --all --incremental
 ```
 
 如果 `raw/` 里已有缓存，只想重新生成 Markdown，可以用 `--build`。
+
+如果想重复运行时优先复用已有 `raw/` 缓存，可以加 `--incremental`。缺失的缓存仍会正常抓取。
 
 ## 配置
 
