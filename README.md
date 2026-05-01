@@ -62,6 +62,15 @@ crawl_manifest.csv
 
 Create one NotebookLM notebook and upload the Markdown files in `notebooklm_sources/`.
 
+## Output Source Rules
+
+Generated NotebookLM sources do not include demo, fixture, sample, or placeholder content.
+
+- `operators/` and `datasets_and_fields/` are rendered from exported WorldQuant BRAIN data.
+- `alpha_patterns/` is derived from exported sources such as operators, fields, public articles, and local notes.
+- Empty source partitions are omitted. For example, `public_articles/` is not generated until public articles are actually crawled.
+- Index files are generated to organize real source files for NotebookLM.
+
 ## Maintenance
 
 - Add personal notes to `my_notes_input/`.

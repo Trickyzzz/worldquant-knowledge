@@ -128,6 +128,15 @@ max_rate_limit_sleep_seconds: 900
 
 建议导入多个分区文件，而不是合并成一个超大 Markdown。这样 NotebookLM 的检索和引用效果更好。
 
+## 输出真实性规则
+
+最终生成到 `notebooklm_sources/` 的文件不会包含 demo、fixture、sample 或 placeholder 内容。
+
+- `operators/` 和 `datasets_and_fields/` 来自 WorldQuant BRAIN 真实导出的数据。
+- `alpha_patterns/` 是从真实导出的 operators、fields、公开文章、本地笔记中派生分类出来的内容。
+- 没有真实来源的分区不会生成。例如没有真实抓取公开文章时，不会生成 `public_articles/` 空目录。
+- index 文件是程序生成的目录文件，用于帮助 NotebookLM 理解资料结构。
+
 ## 个人笔记
 
 把你自己的 `.md` 或 `.txt` 文件放到：
