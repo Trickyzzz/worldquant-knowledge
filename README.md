@@ -1,5 +1,7 @@
 # worldquant-knowledge
 
+中文说明见 [README.zh-CN.md](README.zh-CN.md).
+
 Personal WorldQuant learning-source exporter for NotebookLM.
 
 The tool collects low-risk learning material from public WorldQuant pages and read-only WorldQuant BRAIN structured data, then writes partitioned Markdown files under `notebooklm_sources/`.
