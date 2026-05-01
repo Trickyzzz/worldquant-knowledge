@@ -1,24 +1,23 @@
 # worldquant-knowledge
 
-中文说明见 [README.zh-CN.md](README.zh-CN.md).
+Build a local, NotebookLM-ready knowledge base from WorldQuant learning sources.
 
-Personal WorldQuant learning-source exporter for NotebookLM.
+[中文说明](README.zh-CN.md)
 
-The tool collects low-risk learning material from public WorldQuant pages and read-only WorldQuant BRAIN structured data, then writes partitioned Markdown files under `notebooklm_sources/`.
+`worldquant-knowledge` exports public WorldQuant pages and read-only WorldQuant BRAIN reference data into clean, partitioned Markdown files. The goal is simple: keep operators, datasets, fields, public articles, and your own notes searchable in one NotebookLM notebook without mixing in demo data or empty placeholders.
 
-## What You Provide
+## What It Exports
 
-- Firecrawl API key file: `secrets/firecrawl_apikey.txt`
-- WorldQuant BRAIN logged-in cookie/session file: `secrets/worldquant_brain_cookie.txt`
-- Optional notes: Markdown or text files under `my_notes_input/`
+- WorldQuant public pages through Firecrawl
+- WorldQuant BRAIN operators
+- WorldQuant BRAIN datasets
+- WorldQuant BRAIN fields
+- Derived alpha-pattern views from exported source material
+- Optional local notes from `my_notes_input/`
 
-You do not provide a WorldQuant password, NotebookLM account, Google account, or a complete URL list.
+The exporter does not crawl logged-in courses, forums, community posts, other users' alphas, comments, or ranking details.
 
-## Boundaries
-
-This is not a full-platform crawler. It does not export logged-in courses, forum/community posts, other users' alphas, comments, or ranking details. It uses conservative read-only BRAIN endpoints with rate limits and keeps secrets out of source control.
-
-## Setup
+## Quick Start
 
 ```powershell
 python -m venv .venv
@@ -27,19 +26,22 @@ Copy-Item config.example.yaml config.yaml
 New-Item -ItemType Directory -Force secrets
 ```
 
-Put your Firecrawl key in `secrets/firecrawl_apikey.txt` and your logged-in WorldQuant BRAIN cookie/session in `secrets/worldquant_brain_cookie.txt`. The `secrets/` directory is ignored by git.
+Add your local credentials:
 
-## Rate Limits
+```text
+secrets/firecrawl_apikey.txt
+secrets/worldquant_brain_cookie.txt
+```
 
-WorldQuant BRAIN does not publish a stable user-facing limit for these internal read-only endpoints. The exporter handles this automatically: when BRAIN returns `429`, it waits for `Retry-After` when provided, otherwise uses exponential backoff. The defaults retry up to 12 times and cap each wait at 15 minutes.
-
-## Run
+Then run:
 
 ```powershell
 .\.venv\Scripts\python sync.py --all
 ```
 
-Generated output:
+## Output
+
+Generated NotebookLM sources are written to:
 
 ```text
 notebooklm_sources/
@@ -51,28 +53,71 @@ notebooklm_sources/
   my_notes/
 ```
 
-Also generated:
+Only sections backed by real input are generated. For example, `public_articles/` is omitted until public pages are actually crawled, and `my_notes/` is omitted until local notes exist.
+
+Raw export cache and crawl logs are written separately:
 
 ```text
 raw/
 crawl_manifest.csv
 ```
 
+## Source Rules
+
+The final Markdown output is not populated with demo, fixture, sample, or placeholder content.
+
+- `operators/` and `datasets_and_fields/` are rendered from exported BRAIN data.
+- `alpha_patterns/` is derived from exported operators, fields, public articles, and local notes.
+- Index files are generated to help NotebookLM understand the source structure.
+- Empty source partitions are skipped.
+
+## Commands
+
+```powershell
+.\.venv\Scripts\python sync.py --all
+.\.venv\Scripts\python sync.py --public
+.\.venv\Scripts\python sync.py --brain
+.\.venv\Scripts\python sync.py --notes
+.\.venv\Scripts\python sync.py --build
+```
+
+Use `--build` when you already have cached data in `raw/` and only want to regenerate Markdown.
+
+## Configuration
+
+Copy `config.example.yaml` to `config.yaml` and edit as needed.
+
+Important defaults:
+
+```yaml
+public_crawl:
+  max_pages: 1000
+  max_depth: 5
+
+brain:
+  delay_seconds: 2
+  max_requests_per_run: 500
+  max_rate_limit_retries: 12
+  rate_limit_backoff_seconds: 60
+  max_rate_limit_sleep_seconds: 900
+```
+
+`config.yaml`, `secrets/`, `raw/`, and `notebooklm_sources/` are ignored by git.
+
+## Rate Limits
+
+WorldQuant BRAIN does not publish a stable public limit for the internal read-only endpoints used by the web app. When the exporter receives `429`, it waits for `Retry-After` if provided; otherwise it uses exponential backoff. The default retry policy is intentionally conservative.
+
 ## Import Into NotebookLM
 
-Create one NotebookLM notebook and upload the Markdown files in `notebooklm_sources/`.
+Create one NotebookLM notebook and upload the Markdown files from `notebooklm_sources/`. Keeping the files split by topic usually gives better retrieval and citations than uploading one huge Markdown file.
 
-## Output Source Rules
+## Tests
 
-Generated NotebookLM sources do not include demo, fixture, sample, or placeholder content.
+```powershell
+.\.venv\Scripts\python -m pytest -q
+```
 
-- `operators/` and `datasets_and_fields/` are rendered from exported WorldQuant BRAIN data.
-- `alpha_patterns/` is derived from exported sources such as operators, fields, public articles, and local notes.
-- Empty source partitions are omitted. For example, `public_articles/` is not generated until public articles are actually crawled.
-- Index files are generated to organize real source files for NotebookLM.
+## Notes
 
-## Maintenance
-
-- Add personal notes to `my_notes_input/`.
-- Adjust public seeds or limits in `config.yaml`.
-- If BRAIN endpoints change, update `worldquant_knowledge/brain_client.py`.
+This project is designed for personal learning workflows. Use it only with material you are allowed to access, and keep request limits conservative.
