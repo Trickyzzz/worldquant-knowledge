@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+config.yaml
+secrets/
+raw/
+processed/
+notebooklm_sources/
+crawl_manifest.csv

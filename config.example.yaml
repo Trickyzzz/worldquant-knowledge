@@ -1,0 +1,60 @@
+firecrawl_api_key_file: "secrets/firecrawl_apikey.txt"
+
+public_crawl:
+  enabled: true
+  seed_urls:
+    - "https://www.worldquant.com/"
+    - "https://www.worldquant.com/brain/"
+    - "https://www.worldquant.com/learn2quant/"
+    - "https://www.worldquant.com/ideas/"
+    - "https://www.worldquant.com/brain/iqc/"
+    - "https://www.worldquant.com/brain/iqc-guidelines/"
+  allowed_domains:
+    - "worldquant.com"
+  use_sitemap: true
+  max_pages: 1000
+  max_depth: 5
+  include_pdf: true
+  delay_seconds: 1
+  exclude_patterns:
+    - "/careers/"
+    - "/privacy"
+    - "/terms"
+    - "/cookie"
+    - "/contact"
+
+brain:
+  enabled: true
+  client_type: "internal"
+  auth_type: "cookie"
+  cookie_file: "secrets/worldquant_brain_cookie.txt"
+  base_url: "https://api.worldquantbrain.com"
+  delay_seconds: 2
+  max_requests_per_run: 500
+  max_rate_limit_retries: 12
+  rate_limit_backoff_seconds: 60
+  max_rate_limit_sleep_seconds: 900
+  region: "USA"
+  delay: 1
+  universe: "TOP3000"
+  export:
+    operators: true
+    datasets: true
+    fields: true
+    my_alphas: false
+    simulations: false
+    courses: false
+    forum_posts: false
+
+output:
+  dir: "notebooklm_sources"
+  raw_dir: "raw"
+  processed_dir: "processed"
+  max_words_per_file: 30000
+
+my_notes:
+  enabled: true
+  input_dir: "my_notes_input"
+
+notebooklm:
+  auto_upload: false
