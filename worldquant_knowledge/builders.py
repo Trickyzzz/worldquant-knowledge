@@ -35,8 +35,10 @@ def build_sources(
     _build_operators(output_dir / "operators", operators, max_words_per_file, updated_at)
     _build_datasets_and_fields(output_dir / "datasets_and_fields", datasets, fields, max_words_per_file, updated_at)
     _build_alpha_patterns(output_dir / "alpha_patterns", operators, fields, public_articles, notes, updated_at)
-    _build_public_articles(output_dir / "public_articles", public_articles, max_words_per_file, updated_at)
-    _build_notes(output_dir / "my_notes", notes, max_words_per_file, updated_at)
+    if public_articles:
+        _build_public_articles(output_dir / "public_articles", public_articles, max_words_per_file, updated_at)
+    if notes:
+        _build_notes(output_dir / "my_notes", notes, max_words_per_file, updated_at)
 
 
 def write_json(path: Path, data: Any) -> None:
@@ -124,10 +126,14 @@ def _build_alpha_patterns(
         ("05_risk_neutralization.md", "Risk Neutralization Alpha Patterns", "risk_neutralization", ["neutralization", "neutralize", "group", "sector", "industry", "risk"]),
         ("06_turnover_control.md", "Turnover Control Alpha Patterns", "turnover_control", ["turnover", "decay", "hump", "trade_when", "liquidity", "volume"]),
     ]
-    _write_partition_index(path, "Alpha Patterns", [slug for _, _, slug, _ in patterns], updated_at)
+    written_slugs: list[str] = []
     for filename, title, slug, keywords in patterns:
         body = _alpha_pattern_body(title, slug, keywords, operators, fields, public_articles, notes)
+        if body is None:
+            continue
         write_markdown(path / filename, _meta(title, "alpha_patterns", "derived_from_sources", updated_at, ""), body)
+        written_slugs.append(slug)
+    _write_partition_index(path, "Alpha Patterns", written_slugs, updated_at)
 
 
 def _alpha_pattern_body(
@@ -138,7 +144,7 @@ def _alpha_pattern_body(
     fields: list[dict[str, Any]],
     public_articles: list[dict[str, Any]],
     notes: list[dict[str, str]],
-) -> str:
+) -> str | None:
     if slug == "overview":
         return _alpha_overview_body(operators, fields, public_articles, notes)
 
@@ -146,28 +152,22 @@ def _alpha_pattern_body(
     matched_fields = _match_items(fields, keywords)
     matched_articles = _match_articles(public_articles, keywords)
     matched_notes = _match_notes(notes, keywords)
+    if not any([matched_operators, matched_fields, matched_articles, matched_notes]):
+        return None
 
     lines = [
         f"# {title}",
         "",
         "This file is derived from the currently exported WorldQuant sources.",
-        "",
-        "## Matching Operators",
-        "",
-        _render_named_items(matched_operators, ["name", "id"], limit=40),
-        "",
-        "## Matching Fields",
-        "",
-        _render_named_items(matched_fields, ["id", "name"], limit=80),
-        "",
-        "## Matching Public Articles",
-        "",
-        _render_articles(matched_articles),
-        "",
-        "## Matching Notes",
-        "",
-        _render_notes(matched_notes),
     ]
+    if matched_operators:
+        lines.extend(["", "## Matching Operators", "", _render_named_items(matched_operators, ["name", "id"], limit=40)])
+    if matched_fields:
+        lines.extend(["", "## Matching Fields", "", _render_named_items(matched_fields, ["id", "name"], limit=80)])
+    if matched_articles:
+        lines.extend(["", "## Matching Public Articles", "", _render_articles(matched_articles)])
+    if matched_notes:
+        lines.extend(["", "## Matching Notes", "", _render_notes(matched_notes)])
     return "\n".join(lines)
 
 

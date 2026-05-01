@@ -39,3 +39,21 @@ def test_build_sources_creates_partitioned_indexes(tmp_path):
     assert "WorldQuant Brain" in momentum
     assert "hump" in turnover
     assert "generated placeholder" not in momentum
+
+
+def test_build_sources_omits_empty_generated_sections(tmp_path):
+    output_dir = tmp_path / "notebooklm_sources"
+    build_sources(
+        output_dir=output_dir,
+        public_articles=[],
+        operators=[],
+        datasets=[],
+        fields=[],
+        notes=[],
+        max_words_per_file=30000,
+    )
+
+    assert not (output_dir / "public_articles").exists()
+    assert not (output_dir / "my_notes").exists()
+    assert not (output_dir / "alpha_patterns" / "02_momentum.md").exists()
+    assert (output_dir / "00_index.md").exists()
