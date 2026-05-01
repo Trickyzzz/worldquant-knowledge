@@ -34,7 +34,7 @@ def build_sources(
     _build_root_index(output_dir, updated_at)
     _build_operators(output_dir / "operators", operators, max_words_per_file, updated_at)
     _build_datasets_and_fields(output_dir / "datasets_and_fields", datasets, fields, max_words_per_file, updated_at)
-    _build_alpha_patterns(output_dir / "alpha_patterns", updated_at)
+    _build_alpha_patterns(output_dir / "alpha_patterns", operators, fields, public_articles, notes, updated_at)
     _build_public_articles(output_dir / "public_articles", public_articles, max_words_per_file, updated_at)
     _build_notes(output_dir / "my_notes", notes, max_words_per_file, updated_at)
 
@@ -107,25 +107,136 @@ def _build_datasets_and_fields(
         _write_parts(path, f"{index:02d}_fields_{group}", f"Fields - {group}", "datasets_and_fields", "brain_internal", "", sections, max_words, updated_at)
 
 
-def _build_alpha_patterns(path: Path, updated_at: str) -> None:
+def _build_alpha_patterns(
+    path: Path,
+    operators: list[dict[str, Any]],
+    fields: list[dict[str, Any]],
+    public_articles: list[dict[str, Any]],
+    notes: list[dict[str, str]],
+    updated_at: str,
+) -> None:
     path.mkdir(parents=True, exist_ok=True)
     patterns = [
-        ("01_overview.md", "Alpha Patterns Overview", "overview"),
-        ("02_momentum.md", "Momentum Alpha Patterns", "momentum"),
-        ("03_reversal.md", "Reversal Alpha Patterns", "reversal"),
-        ("04_quality.md", "Quality Alpha Patterns", "quality"),
-        ("05_risk_neutralization.md", "Risk Neutralization Alpha Patterns", "risk_neutralization"),
-        ("06_turnover_control.md", "Turnover Control Alpha Patterns", "turnover_control"),
+        ("01_overview.md", "Alpha Patterns Overview", "overview", []),
+        ("02_momentum.md", "Momentum Alpha Patterns", "momentum", ["momentum", "trend", "delta", "ts_delta", "ts_rank", "relative performance"]),
+        ("03_reversal.md", "Reversal Alpha Patterns", "reversal", ["reversal", "mean reversion", "contrarian", "zscore", "ts_zscore"]),
+        ("04_quality.md", "Quality Alpha Patterns", "quality", ["quality", "fundamental", "earnings", "profit", "margin", "debt"]),
+        ("05_risk_neutralization.md", "Risk Neutralization Alpha Patterns", "risk_neutralization", ["neutralization", "neutralize", "group", "sector", "industry", "risk"]),
+        ("06_turnover_control.md", "Turnover Control Alpha Patterns", "turnover_control", ["turnover", "decay", "hump", "trade_when", "liquidity", "volume"]),
     ]
-    _write_partition_index(path, "Alpha Patterns", [slug for _, _, slug in patterns], updated_at)
-    for filename, title, slug in patterns:
-        body = (
-            f"# {title}\n\n"
-            "This file is a generated placeholder for NotebookLM source organization.\n\n"
-            "Add derived notes here as you identify repeatable alpha research patterns from operators, fields, public articles, and personal experiments.\n\n"
-            f"Pattern category: `{slug}`"
-        )
-        write_markdown(path / filename, _meta(title, "alpha_patterns", "generated", updated_at, ""), body)
+    _write_partition_index(path, "Alpha Patterns", [slug for _, _, slug, _ in patterns], updated_at)
+    for filename, title, slug, keywords in patterns:
+        body = _alpha_pattern_body(title, slug, keywords, operators, fields, public_articles, notes)
+        write_markdown(path / filename, _meta(title, "alpha_patterns", "derived_from_sources", updated_at, ""), body)
+
+
+def _alpha_pattern_body(
+    title: str,
+    slug: str,
+    keywords: list[str],
+    operators: list[dict[str, Any]],
+    fields: list[dict[str, Any]],
+    public_articles: list[dict[str, Any]],
+    notes: list[dict[str, str]],
+) -> str:
+    if slug == "overview":
+        return _alpha_overview_body(operators, fields, public_articles, notes)
+
+    matched_operators = _match_items(operators, keywords)
+    matched_fields = _match_items(fields, keywords)
+    matched_articles = _match_articles(public_articles, keywords)
+    matched_notes = _match_notes(notes, keywords)
+
+    lines = [
+        f"# {title}",
+        "",
+        "This file is derived from the currently exported WorldQuant sources.",
+        "",
+        "## Matching Operators",
+        "",
+        _render_named_items(matched_operators, ["name", "id"], limit=40),
+        "",
+        "## Matching Fields",
+        "",
+        _render_named_items(matched_fields, ["id", "name"], limit=80),
+        "",
+        "## Matching Public Articles",
+        "",
+        _render_articles(matched_articles),
+        "",
+        "## Matching Notes",
+        "",
+        _render_notes(matched_notes),
+    ]
+    return "\n".join(lines)
+
+
+def _alpha_overview_body(
+    operators: list[dict[str, Any]],
+    fields: list[dict[str, Any]],
+    public_articles: list[dict[str, Any]],
+    notes: list[dict[str, str]],
+) -> str:
+    return "\n".join(
+        [
+            "# Alpha Patterns Overview",
+            "",
+            "This section is derived from exported WorldQuant sources and local notes.",
+            "",
+            f"- Operators exported: {len(operators)}",
+            f"- Fields exported: {len(fields)}",
+            f"- Public articles exported: {len(public_articles)}",
+            f"- Local notes loaded: {len(notes)}",
+            "",
+            "Pattern files group matching source material by keywords so NotebookLM can retrieve related operators, fields, articles, and notes together.",
+        ]
+    )
+
+
+def _match_items(items: list[dict[str, Any]], keywords: list[str]) -> list[dict[str, Any]]:
+    return [item for item in items if _contains_keyword(json.dumps(item, ensure_ascii=False), keywords)]
+
+
+def _match_articles(articles: list[dict[str, Any]], keywords: list[str]) -> list[dict[str, Any]]:
+    return [
+        article
+        for article in articles
+        if _contains_keyword(f"{article.get('title', '')}\n{article.get('markdown', '')}", keywords)
+    ]
+
+
+def _match_notes(notes: list[dict[str, str]], keywords: list[str]) -> list[dict[str, str]]:
+    return [note for note in notes if _contains_keyword(f"{note.get('title', '')}\n{note.get('content', '')}", keywords)]
+
+
+def _contains_keyword(text: str, keywords: list[str]) -> bool:
+    lowered = text.lower()
+    return any(keyword.lower() in lowered for keyword in keywords)
+
+
+def _render_named_items(items: list[dict[str, Any]], name_keys: list[str], limit: int) -> str:
+    if not items:
+        return "No matching exported source items found."
+    lines: list[str] = []
+    for item in items[:limit]:
+        name = _display_name(item, name_keys)
+        description = str(item.get("description") or item.get("definition") or item.get("category") or "").strip()
+        lines.append(f"- **{name}**: {description}" if description else f"- **{name}**")
+    if len(items) > limit:
+        lines.append(f"- ...and {len(items) - limit} more matching items.")
+    return "\n".join(lines)
+
+
+def _render_articles(articles: list[dict[str, Any]]) -> str:
+    if not articles:
+        return "No matching public articles found."
+    return "\n".join(f"- **{article.get('title', 'Untitled')}**: {article.get('url', '')}" for article in articles[:30])
+
+
+def _render_notes(notes: list[dict[str, str]]) -> str:
+    if not notes:
+        return "No matching local notes found."
+    return "\n".join(f"- **{note.get('title', 'Untitled')}**: {note.get('path', '')}" for note in notes[:30])
 
 
 def _build_public_articles(path: Path, articles: list[dict[str, Any]], max_words: int, updated_at: str) -> None:
